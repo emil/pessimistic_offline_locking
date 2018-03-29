@@ -1,6 +1,9 @@
 flags: &flags
   encoding: utf8
+  pool: 100
   reconnect: true
+  variables:
+    sql_mode: NO_AUTO_VALUE_ON_ZERO,NO_ENGINE_SUBSTITUTION
 development:
   adapter: mysql2
   host: 127.0.0.1
