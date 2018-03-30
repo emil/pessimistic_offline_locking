@@ -6,21 +6,29 @@ Vanilla Rails App with Examples
 https://github.com/emil/pessimistic_offline_locking
 ---
 #### Purpose
-*_Prevents conflicts between concurrent business transactions by allowing only one business transaction at a time to access data._
-* (https://martinfowler.com/eaaCatalog/pessimisticOfflineLock.html)
+_Prevents conflicts between concurrent business transactions by allowing only one business transaction at a time to access data._
+(https://martinfowler.com/eaaCatalog/pessimisticOfflineLock.html)
 ---
-* Typical Business Scenarios
-* Editing/accessing complex business objects such as Work Orders, Patient Records, Insurance cases, Recurring Plans etc
+#### Scenarios
+* Editing/accessing complex business objects such as 
+ - Work Orders
+ - Patient Records 
+ - Insurance cases
+ - Processing Recurring Plans
+ 
 ---
-* Consider Hospital Patient Management system : 
-** entities: Physician, Appointments, Patients, Prescriptions,  Wards, Insurances
-** physician has_many patients, patients has many prescriptions, appointments, insurances
+Consider Hospital Patient Management system : 
+Entities:
+ - Patient
+ - Physician
+ - Appointment
+ - Prescriptions 
+ - Insurances
+** Physician has_many Patients,Ppatient has many Prescriptions, Appointments, Insurances
 ---
 
-** general requirement: editing a Patient (or subordinate entities) should be performed one business transaction at a time.
----
+General requirement: editing a Patient (or associated entity) should be performed one business transaction at a time.
 ![Sequence Diagram](/app/assets/images/pessimistic_offline_lock.png)
----
 ---
 - Acquire Pessimistic Lock before updating
 - Start/End block *defines* the beg/end of the Pessimistic Offline Lock
@@ -46,7 +54,6 @@ https://github.com/emil/pessimistic_offline_locking
 ```
 ---
 Unit Test Example
----
 ``` ruby
    test "concurrent patient edit not allowed" do
 
@@ -85,7 +92,8 @@ Pessimistic Lock Table
 Patient Lock acquiring
 
 ``` ruby
-Patient.first.with_pessimistic_lock(current_user, 'editing') do |p|
+Patient.find(id).with_pessimistic_lock(current_user, 'editing') do |p|
+  ....
 end
 ```
 
@@ -144,7 +152,11 @@ select * from pessimistic_locks;
     end
   end
 ```
-
+---
+Reusable/genral purpose
+ - Delayed/Active Job
+ - Worker
+ - etc
 ---
 ### Thank you
 * (http://github.com/emil/pessimistic_offline_locking)
