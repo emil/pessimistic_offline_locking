@@ -17,14 +17,17 @@ _Prevents conflicts between concurrent business transactions by allowing only on
  - Processing Recurring Plans
  
 ---
-Consider Hospital Patient Management system : 
-Entities:
+Consider Hospital Patient Management system
+* Entities
  - Patient
  - Physician
  - Appointment
  - Prescriptions 
  - Insurances
-** Physician has_many Patients,Ppatient has many Prescriptions, Appointments, Insurances
+---
+Hospital Patient Management system
+![Sequence Diagram](/app/assets/images/pessimistic_offline_lock.png)
+* Physician has_many Patients,Patient has many Prescriptions, Appointments, Insurances
 ---
 
 General requirement: editing a Patient (or associated entity) should be performed one business transaction at a time.
@@ -98,7 +101,6 @@ end
 ```
 
 ``` sql
-select * from pessimistic_locks;
 +----+-------------+----------------+-------------+---------+----------------+---------------------+---------------------+
 | id | object_type | lock_object_id | lock_holder | reason  | expiry_handler | created_at          | updated_at          |
 +----+-------------+----------------+-------------+---------+----------------+---------------------+---------------------+
