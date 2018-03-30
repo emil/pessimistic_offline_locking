@@ -154,7 +154,7 @@ Controller action re-acquiring the Pessimistic Lock
   end
 ```
 ---
-Reusable/genral purpose
+Reusable/general purpose
  - Delayed/Active Job
  - Worker
  - etc
