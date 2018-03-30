@@ -108,7 +108,7 @@ end
 +----+-------------+----------------+-------------+---------+----------------+---------------------+---------------------+
 ```
 ---
-- Controller action acquiring the Pessimistic Lock
+Controller action acquiring the Pessimistic Lock
 ``` ruby
   before_action :acquire_patient_lock, :only => [:new, :create, :edit, :update]
 
@@ -123,10 +123,9 @@ end
   def new
     @prescription = Prescription.new(:patient_id => params[:patient_id])
   end
-
 ```
 ---
-- Controller action re-acquiring the Pessimistic Lock
+Controller action re-acquiring the Pessimistic Lock
 ``` ruby
   before_action :acquire_patient_lock, :only => [:new, :create, :edit, :update]
 
