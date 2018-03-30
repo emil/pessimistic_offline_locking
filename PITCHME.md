@@ -2,17 +2,21 @@
 
 ### *Pessimistic Offline Lock*
 
-Vanilla Rails App with Examples: https://github.com/emil/pessimistic_offline_locking
+Vanilla Rails App with Examples 
+https://github.com/emil/pessimistic_offline_locking
 ---
-### Purpose
-*"Prevents conflicts between concurrent business transactions by allowing only one business transaction at a time to access data."
+#### Purpose
+*_Prevents conflicts between concurrent business transactions by allowing only one business transaction at a time to access data._
 * (https://martinfowler.com/eaaCatalog/pessimisticOfflineLock.html)
 ---
 * Typical Business Scenarios
 * Editing/accessing complex business objects such as Work Orders, Patient Records, Insurance cases, Recurring Plans etc
-* Lets consider Hospital Patient Management system : 
+---
+* Consider Hospital Patient Management system : 
 ** entities: Physician, Appointments, Patients, Prescriptions,  Wards, Insurances
-** physician has_many patients, patients has many prescriptions, treatments, insurances
+** physician has_many patients, patients has many prescriptions, appointments, insurances
+---
+
 ** general requirement: editing a Patient (or subordinate entities) should be performed one business transaction at a time.
 ---
 ![Sequence Diagram](/app/assets/images/pessimistic_offline_lock.png)
@@ -31,7 +35,9 @@ Vanilla Rails App with Examples: https://github.com/emil/pessimistic_offline_loc
     has_many :insurances
     ....
   end
-  ...
+  
+  # acquire patient lock and update
+  
   Patient.find(id).with_pessimistic_lock(current_user, 'editing') do |p|
     p.prescriptions.build(name: "Amoxicillin 250mg"....
     p.appointments.build(name: "Follow Up"....
@@ -56,7 +62,6 @@ Unit Test Example
 
 ```
 ---
----
 Pessimistic Lock Table
 
 ``` sql
@@ -73,16 +78,71 @@ Pessimistic Lock Table
 | updated_at     | datetime     | NO   | MUL | NULL    |                |
 +----------------+--------------+------+-----+---------+----------------+
 ```
+* Lock Holder  - user/session etc holding a lock
 * Object ID (usually ActiveRecord PK)
 * Object Type Object Class (Patient etc)
 ---
-
-
-- Controller action with the Pessimistic Lock
-- Typical 
+Patient Lock acquiring
 
 ``` ruby
+Patient.first.with_pessimistic_lock(current_user, 'editing') do |p|
+end
+```
 
+``` sql
+select * from pessimistic_locks;
++----+-------------+----------------+-------------+---------+----------------+---------------------+---------------------+
+| id | object_type | lock_object_id | lock_holder | reason  | expiry_handler | created_at          | updated_at          |
++----+-------------+----------------+-------------+---------+----------------+---------------------+---------------------+
+|  2 | Patient     | 298486374      | Dr_Green    | editing | NULL           | 2018-03-29 23:33:53 | 2018-03-29 23:33:53 |
++----+-------------+----------------+-------------+---------+----------------+---------------------+---------------------+
+```
+---
+- Controller action acquiring the Pessimistic Lock
+``` ruby
+  before_action :acquire_patient_lock, :only => [:new, :create, :edit, :update]
+
+  # acquire/reacquire patient lock
+  def acquire_patient_lock
+    unless Patient.find(params[:patient_id]).acquire_pessimistic_lock(current_user, action_name)
+      render :nothing => true, :status => :precondition_failed
+    end
+  end
+  private :acquire_patient_lock
+  
+  def new
+    @prescription = Prescription.new(:patient_id => params[:patient_id])
+  end
+
+```
+---
+- Controller action re-acquiring the Pessimistic Lock
+``` ruby
+  before_action :acquire_patient_lock, :only => [:new, :create, :edit, :update]
+
+  # acquire/reacquire patient lock
+  def acquire_patient_lock
+    unless Patient.find(params[:patient_id]).acquire_pessimistic_lock(current_user, action_name)
+      render :nothing => true, :status => :precondition_failed
+    end
+  end
+  private :acquire_patient_lock
+  
+  def create
+    @prescription = Prescription.new(prescription_params)
+
+    respond_to do |format|
+      if @prescription.save
+        # release lock
+        @prescription.patient.release_pessimistic_lock
+        format.html { redirect_to @prescription, notice: 'Prescription was successfully created.' }
+        format.json { render :show, status: :created, location: @prescription }
+      else
+        format.html { render :new }
+        format.json { render json: @prescription.errors, status: :unprocessable_entity }
+      end
+    end
+  end
 ```
 
 ---

@@ -12,9 +12,19 @@ class PrescriptionsController < ApplicationController
   def show
   end
 
+  before_action :acquire_patient_lock, :only => [:new, :create, :edit, :update]
+
+  # acquire/reacquire patient lock
+  def acquire_patient_lock
+    unless Patient.find(params[:patient_id]).acquire_pessimistic_lock(current_user, action_name)
+      render :nothing => true, :status => :precondition_failed
+    end
+  end
+  private :acquire_patient_lock
+  
   # GET /prescriptions/new
   def new
-    @prescription = Prescription.new
+    @prescription = Prescription.new(:patient_id => params[:patient_id])
   end
 
   # GET /prescriptions/1/edit
@@ -28,6 +38,7 @@ class PrescriptionsController < ApplicationController
 
     respond_to do |format|
       if @prescription.save
+        @prescription.patient.release_pessimistic_lock
         format.html { redirect_to @prescription, notice: 'Prescription was successfully created.' }
         format.json { render :show, status: :created, location: @prescription }
       else
@@ -70,5 +81,10 @@ class PrescriptionsController < ApplicationController
     # Never trust parameters from the scary internet, only allow the white list through.
     def prescription_params
       params.require(:prescription).permit(:name, :patient_id, :drug, :issued_at)
+    end
+
+    private
+    def current_user
+      @current_user ||= Physician.find(session[:user_id]) if session[:user_id]
     end
 end
