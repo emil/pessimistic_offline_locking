@@ -26,7 +26,7 @@ Consider Hospital Patient Management system
  - Insurances
 ---
 Hospital Patient Management system
-![Sequence Diagram](/app/assets/images/pessimistic_offline_lock.png)
+![Model Diagram](/app/assets/images/has_many_through.png)
 * Physician has_many Patients,Patient has many Prescriptions, Appointments, Insurances
 ---
 
