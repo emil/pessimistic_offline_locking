@@ -16,15 +16,20 @@ class PrescriptionsController < ApplicationController
 
   # acquire/reacquire patient lock
   def acquire_patient_lock
-    unless Patient.find(params[:patient_id]).acquire_pessimistic_lock(current_user, action_name)
-      render :nothing => true, :status => :precondition_failed
+
+    @patient = Patient.find(params[:patient_id])
+    
+    unless @patient.acquire_pessimistic_lock(current_user, action_name)
+      @prescription ||= Prescription.new(:patient_id => params[:patient_id])
+      @prescription.errors[:base] << "Unable to acquire Patient Edit Lock"
+      logger.info "Unable to acquire lock for the user #{current_user.name}"
     end
   end
   private :acquire_patient_lock
   
   # GET /prescriptions/new
   def new
-    @prescription = Prescription.new(:patient_id => params[:patient_id])
+    @prescription ||= Prescription.new(:patient_id => params[:patient_id])
   end
 
   # GET /prescriptions/1/edit
@@ -38,7 +43,7 @@ class PrescriptionsController < ApplicationController
 
     respond_to do |format|
       if @prescription.save
-        @prescription.patient.release_pessimistic_lock
+        @patient.release_pessimistic_lock(current_user)
         format.html { redirect_to @prescription, notice: 'Prescription was successfully created.' }
         format.json { render :show, status: :created, location: @prescription }
       else
@@ -85,6 +90,7 @@ class PrescriptionsController < ApplicationController
 
     private
     def current_user
-      @current_user ||= Physician.find(session[:user_id]) if session[:user_id]
+      # test sets thread variable
+      @current_user ||= Thread.current.thread_variable_get(:user)
     end
 end
